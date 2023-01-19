@@ -9,7 +9,7 @@ terraform {
 
 # Configure the AWS Provider
 provider "aws" {
-  region = "eu-west-1"
+  region = var.region
 }
 
 data "aws_availability_zones" "available" {
@@ -28,7 +28,7 @@ module "vpc" {
   private_subnets = ["10.1.1.0/24", "10.1.2.0/24", "10.1.3.0/24"]
   public_subnets  = ["10.1.11.0/24", "10.1.12.0/24", "10.1.13.0/24"]
 
-  enable_nat_gateway = false
+  enable_nat_gateway = true
 
   # needed otherwise the EFS volumes for the server will not mount for the Waypoint server task
   enable_dns_hostnames = true
@@ -36,12 +36,12 @@ module "vpc" {
   tags = {
     Environment = "Development"
     Owner       = "Nic Jackson"
-    Project     = "Waypoint ECS Test"
+    Project     = "Delphix Demo"
   }
 }
 
 module "ecs" {
-  source  = "terraform-aws-modules/ecs/aws"
+  source = "terraform-aws-modules/ecs/aws"
 
   cluster_name = "dephix-${var.name}"
 
@@ -67,7 +67,7 @@ module "ecs" {
   tags = {
     Environment = "Development"
     Owner       = "Nic Jackson"
-    Project     = "Waypoint ECS Test"
+    Project     = "Delphix Demo"
   }
 }
 
