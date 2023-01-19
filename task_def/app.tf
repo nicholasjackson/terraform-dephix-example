@@ -31,7 +31,15 @@ variable "cidr" {
   default = ""
 }
 
-variable "subnets" {
+variable "private_subnets" {
+  default = []
+}
+
+variable "alb_arn" {
+  default = ""
+}
+
+variable "alb_private_ips" {
   default = []
 }
 
@@ -45,6 +53,35 @@ variable "execution_role_arn" {
 
 variable "task_role_arn" {
   default = ""
+}
+
+variable "load_balancer_enabled" {
+  default = false
+}
+
+
+
+resource "aws_alb_target_group" "main" {
+  name        = "${var.name}-tg"
+  port        = var.port
+  protocol    = "TCP"
+  vpc_id      = var.vpc_id
+  target_type = "ip"
+
+  health_check {
+    protocol = "TCP"
+  }
+}
+
+resource "aws_alb_listener" "tcp" {
+  load_balancer_arn = var.alb_arn
+  port              = var.port
+  protocol          = "TCP"
+
+  default_action {
+    target_group_arn = aws_alb_target_group.main.id
+    type             = "forward"
+  }
 }
 
 locals {
@@ -104,6 +141,14 @@ resource "aws_security_group" "app" {
   }
 
   ingress {
+    description = "Container port from alb"
+    protocol    = "tcp"
+    from_port   = var.port
+    to_port     = var.port
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
     description      = "TLS inbound"
     from_port        = 443
     to_port          = 443
@@ -147,7 +192,7 @@ resource "aws_ecs_service" "app" {
 
   network_configuration {
     security_groups = [aws_security_group.app.id]
-    subnets         = var.subnets
+    subnets         = var.private_subnets
   }
 
   service_connect_configuration {
@@ -165,11 +210,21 @@ resource "aws_ecs_service" "app" {
     }
   }
 
+  load_balancer {
+    target_group_arn = aws_alb_target_group.main.id
+    container_name   = var.name
+    container_port   = var.port
+  }
+
   lifecycle {
     ignore_changes = [
       capacity_provider_strategy
     ]
   }
+
+  depends_on = [
+    aws_alb_listener.tcp
+  ]
 }
 
 output "fqdn" {

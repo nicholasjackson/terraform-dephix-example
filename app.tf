@@ -62,6 +62,37 @@ resource "aws_iam_policy" "exec" {
   EOF
 }
 
+resource "aws_security_group" "alb" {
+  name        = "alb_ingress_${var.name}"
+  description = "Allow Ingress inbound traffic"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress {
+    description = "DB port from public"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+}
+
+resource "aws_lb" "main" {
+  name               = "${var.name}-alb"
+  internal           = false
+  load_balancer_type = "network"
+  subnets            = module.vpc.public_subnets
+
+  enable_deletion_protection = false
+}
+
 resource "aws_iam_role_policy_attachment" "ecs-task-role-policy-attachment" {
   role       = aws_iam_role.ecs_task_role.name
   policy_arn = resource.aws_iam_policy.exec.arn
@@ -98,12 +129,14 @@ module "api" {
 
   sd_namespace = aws_service_discovery_http_namespace.app.arn
 
-  cidr    = "10.1.0.0/16"
-  subnets = module.vpc.private_subnets
-  vpc_id  = module.vpc.vpc_id
+  cidr            = "10.1.0.0/16"
+  private_subnets = module.vpc.private_subnets
+  vpc_id          = module.vpc.vpc_id
 
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
   task_role_arn      = aws_iam_role.ecs_task_role.arn
+
+  alb_arn = aws_lb.main.id
 }
 
 module "processor" {
@@ -111,7 +144,7 @@ module "processor" {
 
   name       = "processor"
   image      = "nicholasjackson/payments-processor:v0.1.4"
-  port       = 3000
+  port       = 3001
   region     = var.region
   cluster_id = module.ecs.cluster_id
   env_vars = {
@@ -123,12 +156,14 @@ module "processor" {
 
   sd_namespace = aws_service_discovery_http_namespace.app.arn
 
-  cidr    = "10.1.0.0/16"
-  subnets = module.vpc.private_subnets
-  vpc_id  = module.vpc.vpc_id
+  cidr            = "10.1.0.0/16"
+  private_subnets = module.vpc.private_subnets
+  vpc_id          = module.vpc.vpc_id
 
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
   task_role_arn      = aws_iam_role.ecs_task_role.arn
+
+  alb_arn = aws_lb.main.id
 }
 
 module "traffic-generator" {
@@ -136,7 +171,7 @@ module "traffic-generator" {
 
   name       = "generator"
   image      = "nicholasjackson/payments-generator:v0.1.4"
-  port       = 3000
+  port       = 3002
   region     = var.region
   cluster_id = module.ecs.cluster_id
   env_vars = {
@@ -145,12 +180,14 @@ module "traffic-generator" {
 
   sd_namespace = aws_service_discovery_http_namespace.app.arn
 
-  cidr    = "10.1.0.0/16"
-  subnets = module.vpc.private_subnets
-  vpc_id  = module.vpc.vpc_id
+  cidr            = "10.1.0.0/16"
+  private_subnets = module.vpc.private_subnets
+  vpc_id          = module.vpc.vpc_id
 
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
   task_role_arn      = aws_iam_role.ecs_task_role.arn
+
+  alb_arn = aws_lb.main.id
 }
 
 module "db" {
@@ -169,10 +206,12 @@ module "db" {
 
   sd_namespace = aws_service_discovery_http_namespace.app.arn
 
-  cidr    = "10.1.0.0/16"
-  subnets = module.vpc.private_subnets
-  vpc_id  = module.vpc.vpc_id
+  cidr            = "10.1.0.0/16"
+  private_subnets = module.vpc.private_subnets
+  vpc_id          = module.vpc.vpc_id
 
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
   task_role_arn      = aws_iam_role.ecs_task_role.arn
+
+  alb_arn = aws_lb.main.id
 }

@@ -86,3 +86,6 @@ output "ecs_subnet_2" {
 output "ecs_subnet_3" {
   value = module.vpc.public_subnets[2]
 }
+output "alb_dns" {
+  value = aws_lb.main.dns_name
+}
