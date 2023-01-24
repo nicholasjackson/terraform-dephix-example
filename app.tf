@@ -190,6 +190,14 @@ module "traffic-generator" {
   alb_arn = aws_lb.main.id
 }
 
+module "delphix_db" {
+  source = "./dev_db/"
+
+  name        = var.name
+  dct_host    = var.dct_host
+  dct_api_key = var.dct_api_key
+}
+
 module "db" {
   source = "./task_def"
 
