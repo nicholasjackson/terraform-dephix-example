@@ -114,6 +114,9 @@ resource "aws_service_discovery_http_namespace" "app" {
 
 module "api" {
   source = "./task_def"
+  depends_on = [
+    module.db
+  ]
 
   name       = "api"
   image      = "nicholasjackson/payments-api:v0.1.3"
@@ -139,6 +142,9 @@ module "api" {
 
 module "processor" {
   source = "./task_def"
+  depends_on = [
+    module.db
+  ]
 
   name       = "processor"
   image      = "nicholasjackson/payments-processor:v0.1.5"
@@ -164,6 +170,9 @@ module "processor" {
 
 module "generator" {
   source = "./task_def"
+  depends_on = [
+    module.api
+  ]
 
   name       = "generator"
   image      = "nicholasjackson/payments-generator:v0.1.4"
