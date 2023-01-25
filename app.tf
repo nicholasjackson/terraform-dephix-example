@@ -135,15 +135,13 @@ module "api" {
 
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
   task_role_arn      = aws_iam_role.ecs_task_role.arn
-
-  alb_arn = aws_lb.main.id
 }
 
 module "processor" {
   source = "./task_def"
 
   name       = "processor"
-  image      = "nicholasjackson/payments-processor:v0.1.4"
+  image      = "nicholasjackson/payments-processor:v0.1.5"
   port       = 3001
   region     = var.region
   cluster_id = module.ecs.cluster_id
@@ -162,11 +160,9 @@ module "processor" {
 
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
   task_role_arn      = aws_iam_role.ecs_task_role.arn
-
-  alb_arn = aws_lb.main.id
 }
 
-module "traffic-generator" {
+module "generator" {
   source = "./task_def"
 
   name       = "generator"
@@ -186,17 +182,15 @@ module "traffic-generator" {
 
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
   task_role_arn      = aws_iam_role.ecs_task_role.arn
-
-  alb_arn = aws_lb.main.id
 }
 
-module "delphix_db" {
-  source = "./dev_db/"
-
-  name        = var.name
-  dct_host    = var.dct_host
-  dct_api_key = var.dct_api_key
-}
+//module "delphix_db" {
+//  source = "./dev_db/"
+//
+//  name        = var.name
+//  dct_host    = var.dct_host
+//  dct_api_key = var.dct_api_key
+//}
 
 module "db" {
   source = "./task_def"
@@ -221,5 +215,10 @@ module "db" {
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
   task_role_arn      = aws_iam_role.ecs_task_role.arn
 
-  alb_arn = aws_lb.main.id
+  load_balancer_settings = {
+    alb_arn   = aws_lb.main.id
+    port      = 5432
+    protocol  = "tcp"
+    container = "db"
+  }
 }

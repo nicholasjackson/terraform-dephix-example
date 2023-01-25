@@ -35,10 +35,6 @@ variable "private_subnets" {
   default = []
 }
 
-variable "alb_arn" {
-  default = ""
-}
-
 variable "alb_private_ips" {
   default = []
 }
@@ -55,31 +51,40 @@ variable "task_role_arn" {
   default = ""
 }
 
-variable "load_balancer_enabled" {
-  default = false
+variable "load_balancer_settings" {
+  type = object({
+    alb_arn   = string
+    port      = string
+    protocol  = string
+    container = string
+  })
+
+  default = null
 }
 
-
-
 resource "aws_alb_target_group" "main" {
+  count = length(var.load_balancer_settings[*])
+
   name        = "${var.name}-tg"
-  port        = var.port
-  protocol    = "TCP"
+  port        = var.load_balancer_settings.port
+  protocol    = upper(var.load_balancer_settings.protocol)
   vpc_id      = var.vpc_id
   target_type = "ip"
 
   health_check {
-    protocol = "TCP"
+    protocol = upper(var.load_balancer_settings.protocol)
   }
 }
 
 resource "aws_alb_listener" "tcp" {
-  load_balancer_arn = var.alb_arn
-  port              = var.port
-  protocol          = "TCP"
+  count = length(var.load_balancer_settings[*])
+
+  load_balancer_arn = var.load_balancer_settings.alb_arn
+  port              = var.load_balancer_settings.port
+  protocol          = upper(var.load_balancer_settings.protocol)
 
   default_action {
-    target_group_arn = aws_alb_target_group.main.id
+    target_group_arn = aws_alb_target_group.main.0.id
     type             = "forward"
   }
 }
@@ -138,14 +143,6 @@ resource "aws_security_group" "app" {
     to_port     = var.port
     protocol    = "tcp"
     cidr_blocks = [var.cidr]
-  }
-
-  ingress {
-    description = "Container port from alb"
-    protocol    = "tcp"
-    from_port   = var.port
-    to_port     = var.port
-    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
@@ -210,10 +207,14 @@ resource "aws_ecs_service" "app" {
     }
   }
 
-  load_balancer {
-    target_group_arn = aws_alb_target_group.main.id
-    container_name   = var.name
-    container_port   = var.port
+  dynamic "load_balancer" {
+    for_each = var.load_balancer_settings[*]
+
+    content {
+      target_group_arn = aws_alb_target_group.main.0.id
+      container_name   = var.load_balancer_settings.container
+      container_port   = var.load_balancer_settings.port
+    }
   }
 
   lifecycle {
