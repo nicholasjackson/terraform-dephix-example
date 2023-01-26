@@ -193,13 +193,13 @@ module "generator" {
   task_role_arn      = aws_iam_role.ecs_task_role.arn
 }
 
-//module "delphix_db" {
-//  source = "./dev_db/"
-//
-//  name        = var.name
-//  dct_host    = var.dct_host
-//  dct_api_key = var.dct_api_key
-//}
+module "delphix_db" {
+  source = "./dev_db/"
+
+  name        = var.name
+  dct_host    = var.dct_host
+  dct_api_key = var.dct_api_key
+}
 
 module "db" {
   source = "./task_def"

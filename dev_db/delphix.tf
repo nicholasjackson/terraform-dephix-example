@@ -20,7 +20,7 @@ variable "dct_api_key" {
 }
 
 variable "datasource_id" {
-  default = "Postgres_master"
+  default = "Oracle_master"
 }
 
 # Configure the DXI Provider
@@ -32,7 +32,7 @@ provider "delphix" {
 
 # Provision a VDB 1
 resource "delphix_vdb" "provision_vdb_1" {
-  name                   = "${var.name}-dev"
+  name                   = "oc_${var.name}"
   source_data_id         = var.datasource_id
   auto_select_repository = true
 }
