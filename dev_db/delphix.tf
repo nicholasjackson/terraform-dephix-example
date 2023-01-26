@@ -36,3 +36,7 @@ resource "delphix_vdb" "provision_vdb_1" {
   source_data_id         = var.datasource_id
   auto_select_repository = true
 }
+
+output "fqdn" {
+  value = delphix_vdb.provision_vdb_1.fqdn
+}

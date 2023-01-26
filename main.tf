@@ -69,21 +69,3 @@ module "ecs" {
   }
 }
 
-output "vpc_id" {
-  value = module.vpc.vpc_id
-}
-
-output "ecs_subnet_1" {
-  value = module.vpc.public_subnets[0]
-}
-
-output "ecs_subnet_2" {
-  value = module.vpc.public_subnets[1]
-}
-
-output "ecs_subnet_3" {
-  value = module.vpc.public_subnets[2]
-}
-output "alb_dns" {
-  value = aws_lb.main.dns_name
-}
