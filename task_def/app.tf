@@ -2,6 +2,10 @@ variable "name" {
   default = ""
 }
 
+variable "namespace" {
+  default = ""
+}
+
 variable "region" {
   default = ""
 }
@@ -65,7 +69,7 @@ variable "load_balancer_settings" {
 resource "aws_alb_target_group" "main" {
   count = length(var.load_balancer_settings[*])
 
-  name        = "${var.name}-tg"
+  name        = "${var.name}-${var.namespace}-tg"
   port        = var.load_balancer_settings.port
   protocol    = upper(var.load_balancer_settings.protocol)
   vpc_id      = var.vpc_id
@@ -97,7 +101,7 @@ locals {
     }
   ]
 
-  log_group = "/fargate/service/${var.name}"
+  log_group = "/fargate/service/${var.namespace}/${var.name}"
 
   task = jsonencode([
     {
